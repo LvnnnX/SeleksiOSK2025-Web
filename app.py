@@ -9,6 +9,7 @@ import sys
 import random
 import time
 import os
+from connector import *
 
 from process import clear_background, clearfirstOption, writeQuestion, writeDescription
 
@@ -17,9 +18,13 @@ list_soal_Matematika = []
 list_soal_Pemrograman = []
 
 #Max Soal = 30 (20 matematika + 10 pemrograman)
+allSoal = []
+allAnswer = []
+rated = {}
+st.session_state.answer = []
 
 
-with st.form(key='Soal-quiz'):
+with st.form(key='Soal-quiz',clear_on_submit=False):
     st.header("Soal-soal pemrograman C++")
     st.subheader("List soal")
     
@@ -101,41 +106,44 @@ with st.form(key='Soal-quiz'):
     # st.write("Soal Pemrograman")
     # st.write(progdf.iloc[list_soal_Pemrograman], use_container_width=True)
     # st.write("total soal : ", len(list_soal_Pemrograman))
-    answer = {}
+
+
     # soalCount = 1
     def writeSoal(type):
         """
         Write soal to streamlit
         """
         
-        soalCount = len(answer.keys()) + 1
+        soalCount = len(allSoal) + 1
         tempDf = matdf if type == "Matematika" else progdf
         list_soal = list_soal_Matematika if type == "Matematika" else list_soal_Pemrograman
         # list_soal.sort()
         flagCode = None
         for num,soal in enumerate(list_soal):
             all_jawaban = tempDf.iloc[soal]["Jawaban"].split(",")
-            soal = tempDf.iloc[soal]["Soal"]
+            soalStr = tempDf.iloc[soal]["Soal"]
                 #check if they have code
-            if soal.find('<kode>') != -1:
-                numCode = int(soal.split('<kode>')[0])
+            if soalStr.find('<kode>') != -1:
+                numCode = int(soalStr.split('<kode>')[0])
                 if flagCode == numCode:
-                    writeQuestion(f'{soalCount}. ' + soal.split('<kode>')[1])
+                    writeQuestion(f'{soalCount}. ' + soalStr.split('<kode>')[1])
                     random.shuffle(all_jawaban)
-                    ans = st.radio('Jawaban :', ['']+all_jawaban, key=soal,index=0)
-                    answer[soal] = ans
+                    ans = st.radio('Jawaban :', ['']+all_jawaban, key=f'soalke-{soalCount}',index=0)
+                    allAnswer.append(ans)
+                    allSoal.append(soal)
                     clearfirstOption()
                 else:
                     soalCount -= 1
                     flagCode = numCode
-                    writeDescription(soal.split('<kode>')[1],type=type)
+                    writeDescription(soalStr.split('<kode>')[1],type=type)
             
             else:
                 # print(tempDf.iloc[soal]["Soal"])
-                writeQuestion(f'{soalCount}. ' + soal)
+                writeQuestion(f'{soalCount}. ' + soalStr)
                 random.shuffle(all_jawaban)
-                ans = st.radio('Jawaban :', ['']+all_jawaban, key=soal, index=0)
-                answer[soal] = ans
+                ans = st.radio('Jawaban :', ['']+all_jawaban, key=f'soalke-{soalCount}', index=0)
+                allSoal.append(soal)
+                allAnswer.append(ans)
                 clearfirstOption()
             # st.write(all_jawaban)
             #Count the soal
@@ -143,36 +151,63 @@ with st.form(key='Soal-quiz'):
             
             
 
-    writeSoal("Matematika")
+    # writeSoal("Matematika")
             
     writeSoal("Pemrograman")
         
     
-    @st.dialog('Confirmation')
-    def confirmation():
-        # writeDescription("Apakah anda yakin sudah menjawab semua soal?")
-        st.write("Apakah anda yakin sudah menjawab semua soal?")
-        col1,col2 = st.columns(2)
-        with col1:
-            ya_button = st.button("Ya", key='ya')
-        with col2:
-            tidak_button = st.button("Tidak", key='tidak')
+    # @st.dialog('Confirmation')
+    # def confirmation():
+    #     # writeDescription("Apakah anda yakin sudah menjawab semua soal?")
+    #     st.write("Apakah anda yakin sudah menjawab semua soal?")
+    #     col1,col2 = st.columns(2)
+    #     with col1:
+    #         ya_button = st.button("Ya", key='ya')
+    #     with col2:
+    #         tidak_button = st.button("Tidak", key='tidak')
             
-        if ya_button:
-            st.success("Jawaban anda sudah terkirim")
-            st.balloons()
-            time.sleep(3)
-            st.rerun()
-        if tidak_button:
-            st.session_state.confirmation_button = False
-            st.success("Silahkan lanjutkan mengerjakan soal")
-            #close dialog
-            st.session_state.confirmation_button = False
+    #     if ya_button:
+    #         #write to google sheet
+    #         data = pd.DataFrame(columns=["Nama","Kelas","Soal","Jawaban"])
+    #         #make data 1 row
+    #         data = pd.concat(
+    #             [data, pd.DataFrame({"Nama":['Dummy'],
+    #                                  "Kelas":['Dummy'],
+    #                                  "Soal":str(allSoal),
+    #                                  "Jawaban":str(allAnswer)})],
+    #             ignore_index=True
+    #         )
+            
+    #         #append data to google sheet
+    #         sheet.append_rows(data.values.tolist())
+            
+            
+    #         st.success("Jawaban anda sudah terkirim")
+    #         st.balloons()
+    #         time.sleep(3)
+    #         st.rerun()
+    #     if tidak_button:
+    #         st.session_state.confirmation_button = False
+    #         st.success("Silahkan lanjutkan mengerjakan soal")
+    #         #close dialog
         
+    # st.write(allAnswer)
+    
     button = st.form_submit_button("Submit Jawaban")
     
     if button:
-        confirmation()
+        rated = {soal : ans for soal, ans in zip(allSoal, allAnswer)}
+        st.session_state.answer = rated
+        #write session state
+        st.write(st.session_state.answer)
+
+button2 = st.button("Lihat Jawaban")
+if button2:
+    st.write("Jawaban anda")
+    st.write(st.session_state.answer)
+
+
+
     
     
     

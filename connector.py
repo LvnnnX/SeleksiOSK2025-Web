@@ -13,15 +13,11 @@ scopes = [
 ]
 # Path to your service account key file
 # CREDENTIALS = os.environ['CREDENTIALS']
-CREDENTIALS = os.path.join(token_dir, 'credentials.json')
+CREDENTIALS = os.path.join('credentials.json')
 creds = Credentials.from_service_account_file(CREDENTIALS, scopes=scopes)
 client = gspread.authorize(creds)
 
-sheet_id = os.environ['SHEET_ID']
-sheet = client.open_by_key(sheet_id)
+# sheet_id = os.environ['SHEET_ID']
+sheet = client.open_by_key('1_SyiH5d-02uHIx9ID4ab2EuZTx2uTsVO8KF8EenI7yo').sheet1
 
-values_list = sheet.sheet1.get_all_values()
-print(values_list)
-
-df = pd.DataFrame(values_list[1:], columns=values_list[0])
-print(df)
+# values_list = sheet.sheet1.get_all_values()
